@@ -8,7 +8,10 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <stdint.h>
 #include "../include/rerror.h"
+#include "../include/fsize.h"
+//#include "../include/gfnc.h"
 
 const char *help = "--help";
 int main(int argc, char **argv)
@@ -48,11 +51,35 @@ int main(int argc, char **argv)
 	if (connect(fd, (struct sockaddr*)addr, addrlen))
 		rerror("connect-error\n", 1);
 	
-//	write();
-	char buff[100];
-	read(fd, buff, 100);
-	printf("%s\n", buff);
+	//send file size to server	
+	int file_size = fsize(argv[3]);
+	int32_t nf_size = htonl(file_size);
+	write(fd, &(nf_size), sizeof(nf_size));
 
+	//read file data to buffer
+	int ffd = open(argv[3], O_RDONLY);
+	char *buff = (char*)malloc(file_size);
+	read(ffd, buff, file_size);
+	printf("%s", buff);
+	
+	//sent file data
+	write(fd, buff, file_size);
+
+	//sent file name size
+	int32_t fname_size = strlen(argv[3]) + 1;
+	int hfname_size = fname_size;
+	fname_size = htonl(fname_size);
+	write(fd, &(fname_size), sizeof(fname_size));
+	
+	//sent file name
+	write(fd, argv[3], hfname_size);
+	
+//	char *nstr = NULL;
+//	gfnc(argv[3], nstr);
+//	printf("%s\n", nstr);
+
+	free(buff);
+	close(ffd);
 	close(fd);
 	free(addr);
 
