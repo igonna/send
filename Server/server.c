@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <stdio.h>
+#include <stdint.h>
 #include "../include/rerror.h"
 
 const char *help = "--help";
@@ -40,7 +42,31 @@ int main(int argc, char **argv)
 	cfd = accept(fd, (struct sockaddr*)addr, (socklen_t*)&addrlen);
 	if (cfd < 0)
 		rerror("accept-error\n", 1);
-	write(cfd, "hello", 6);
+
+	//get file size from client
+	int32_t file_size[1];
+	read(cfd, file_size, sizeof(*file_size));
+	*file_size = ntohl(*file_size);
+	printf("file size: %d\n", *file_size);
+	
+	//read file data
+	char *file_data = (char*)malloc(*file_size);
+	read(cfd, file_data, *file_size);
+	printf("file data: %s\n", file_data);
+
+	//read file name size
+	int32_t fname_size[1];
+	read(cfd, fname_size, sizeof(*file_size));
+	*fname_size = ntohl(*fname_size);
+	printf("file name size: %d\n", *fname_size);	
+	
+	//read file name
+	char *file_name = (char*)malloc(*fname_size);
+	read(cfd, file_name, *fname_size);
+	printf("file name: %s\n", file_name);
+
+	free(file_name);
+	free(file_data);
 	close(fd);
 	close(cfd);
 	free(addr);
