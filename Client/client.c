@@ -11,7 +11,8 @@
 #include <stdint.h>
 #include "../include/rerror.h"
 #include "../include/fsize.h"
-//#include "../include/gfnc.h"
+#include "../include/gfnc.h"
+#include "../include/exi_file.h"
 
 const char *help = "--help";
 int main(int argc, char **argv)
@@ -22,16 +23,12 @@ int main(int argc, char **argv)
 		rerror("For single file:\n\t./sent [ip address] [port] [file]\nFor many files:\n\t./sent [ip address] [port] [file 1] [file 2] etc\n", 0);
 	if (argc < 4)
 		rerror("Few arguments!\nType ./sent --help\n", 1);
-	int tmp_fd;
 	for (int step = 3; step < argc; ++step) {
-		tmp_fd = open(argv[step], O_RDONLY);
-		if (-1 == tmp_fd) {
+		if (!exi_file(argv[step])) {
 			write(2, argv[step], strlen(argv[step]));
 			rerror(" - no such file\n", 1);
-		} else
-			close(tmp_fd);
+		}
 	}
-
 	int fd, addrlen;
 
 	fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -60,25 +57,25 @@ int main(int argc, char **argv)
 	int ffd = open(argv[3], O_RDONLY);
 	char *buff = (char*)malloc(file_size);
 	read(ffd, buff, file_size);
-	printf("%s", buff);
 	
 	//sent file data
 	write(fd, buff, file_size);
+	free(buff);
 
+	//getting clean file name, without '/' character	
+	char *nf_name = (char*)malloc(1);
+	gfnc(argv[3], nf_name);
+	
 	//sent file name size
-	int32_t fname_size = strlen(argv[3]) + 1;
+	int32_t fname_size = strlen(nf_name) + 1;
 	int hfname_size = fname_size;
 	fname_size = htonl(fname_size);
 	write(fd, &(fname_size), sizeof(fname_size));
 	
 	//sent file name
-	write(fd, argv[3], hfname_size);
-	
-//	char *nstr = NULL;
-//	gfnc(argv[3], nstr);
-//	printf("%s\n", nstr);
+	write(fd, nf_name, hfname_size);
+	free(nf_name);
 
-	free(buff);
 	close(ffd);
 	close(fd);
 	free(addr);
