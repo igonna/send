@@ -1,2 +1,2 @@
-sent: client.c
-	gcc -Wall client.c -o sent
+send: client.c
+	gcc -Wall client.c -o send
