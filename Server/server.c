@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "../include/rerror.h"
-
+#include "../include/exi_file.h"
 const char *help = "--help";
 int main(int argc, char **argv)
 {
@@ -64,6 +64,17 @@ int main(int argc, char **argv)
 	char *file_name = (char*)malloc(*fname_size);
 	read(cfd, file_name, *fname_size);
 	printf("file name: %s\n", file_name);
+	
+	if (!exi_file(file_name)) {
+		printf("yes\n");
+		int ffd = open(file_name, O_RDWR | O_CREAT);
+		write(ffd, file_data, *file_size);
+		fchmod(ffd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+//		unlink(file_name);
+		close(ffd);
+	} else {
+
+	}
 
 	free(file_name);
 	free(file_data);
